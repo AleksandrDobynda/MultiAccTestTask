@@ -32,7 +32,7 @@ class Bank
         }
 
         try {
-            return 0.00; //get exchange ratio currency/currency
+            return 0.00; //db->get exchange ratio currency/currency()
         } catch (\Throwable $e) {
             Throw NotFoundExcption();
         }
@@ -40,8 +40,7 @@ class Bank
 
     public function getCurrencyList(): array
     {
-        //get from db
-        $currencyList = [
+        $currencyList = [          //db->currency list get all();
             'RUB' => 'рубль',
             'USD' => 'доллар',
             'EUR' => 'евро',
@@ -53,9 +52,9 @@ class Bank
     public function addCurrency(string $currencyCode, string $currencyName): bool
     {
         try {
-            //add
+            //db->insertNewCurrency($currencyCode, $currencyName);
         } catch (\Throwable $e) {
-            Throw NotFoundExcption();
+            Throw AlreadyExistsExcption();
         }
 
         return true;
@@ -70,5 +69,14 @@ class Bank
         }
 
         return true;
+    }
+
+    public function checkCurrency(string $currencyCode): string
+    {
+        if (!isset($this->currencyList[$currencyCode])) {
+            throw NotFoundExcption(); //у банка нет такой валюты
+        }
+
+        return $this->currencyList[$currencyCode];
     }
 }

@@ -2,20 +2,28 @@
 
 namespace Bank;
 
+use Bank\Bank;
+
 class Account
 {
     private Bank $bank;
     private int $accountId;
     private string $mainCurrency;
-    private array $currencyList = [];
+    private array $currencyList = [
+        'RUB' => 'рубль',
+        'USD' => 'доллар',
+        'EUR' => 'евро',
+    ];
 
     public function __construct(int $accountId = null)
     {
         if ($accountId) {
             $this->accountId = $accountId;
             $this->mainCurrency = ''; //db get main currency of this acc
-            $this->currencyList = []; //db get currency list of this acc
+            $this->currencyList = []; //db->getCurrencyList($this->accountId) ?? [];
         } else {
+            //insert new account in db
+            $this->accountId = ''; //db get id
             $this->mainCurrency = ''; //db get default main currency
         }
 
@@ -24,85 +32,75 @@ class Account
 
     public function addCurrency(string $currencyCode): bool
     {
-        try {
-            //add currency $currencyCode to account - err if no this currency code in db
-        } catch (\Throwable $exception) {
-            throw NotFoundExcption();
-        }
+        $currencyName = $this->bank->checkCurrency($currencyCode);
+        //db->add currency $currencyCode to account()
+        $this->currencyList[$currencyCode] = $currencyName;
 
         return true;
     }
 
     public function removeCurrency(string $currencyCode): bool
     {
-        try {
-            //remove currency $currencyCode from account - err if no this currency code in db
-        } catch (\Throwable $exception) {
-            throw NotFoundExcption();
+        if ($currencyCode !== $this->mainCurrency) { //переводим деньги на основной счет
+            $balance = $this->getAccountBalance($currencyCode);
+            $exchangeRatio = $this->bank->getExchangeRate($currencyCode, $this->mainCurrency);
+            $this->putMoneyInAccount($this->mainCurrency, $balance * $exchangeRatio);
         }
+
+        //db->remove currency $currencyCode from account()
+        unset($this->currencyList[$currencyCode]);
 
         return true;
     }
 
     public function setMainCurrency(string $currencyCode): bool
     {
-        try {
-            //set as main $currencyCode
-        } catch (\Throwable $exception) {
-            throw NotFoundExcption();
-        }
+        $this->bank->checkCurrency($currencyCode);
+        $this->checkCurrency($currencyCode);
+        //db->set as main acc $currencyCode()
+        $this->mainCurrency = $currencyCode;
 
         return true;
     }
 
     public function getCurrencyList(): array
     {
-        //get from db
-        $currencyList = [
-            'RUB' => 'рубль',
-            'USD' => 'доллар',
-            'EUR' => 'евро',
-        ];
-
-        return $currencyList ?? [];
+        return $this->currencyList;
     }
 
-    public function putMoneyInAccount(string $currencyCode, float $amount): bool
+    public function putMoneyInAccount(string $currencyCode, float $amount): void
     {
-        if (isset($this->currencyList[$currencyCode])) {
-            try {
-                $balance = 0;//get from db
-                $balance += $amount;
-                //db->write new $balance
-            } catch (\Throwable $exception) {
-                throw NotFoundExcption();
-            }
+        $balance = $this->getAccountBalance($currencyCode);
+        $balance += $amount;
+        //db->write new balance($balance)
+    }
 
-            return true;
+    public function getMoneyFromAccount(string $currencyCode, float $amount): bool
+    {
+        $balance = $this->getAccountBalance();
+
+        if ($amount <= $balance) {
+            $newBalance = $balance - $amount;
+            //db->writeNewBalance();
+        } else {
+            throw NotEnoughtMoneyExcption(); //у клиента недостаточно денег
         }
 
-        return false;
+        return true;
     }
 
     public function getAccountBalance(string $currencyCode = null): float
     {
         $currencyCode = $currencyCode ?? $this->mainCurrency;
+        $this->checkCurrency($currencyCode);
 
-        if (!isset($this->currencyList[$currencyCode])) {
-            throw NotFoundExcption();
-        }
-
-        return $balance = 0.00; //db->getAccountBalance($this->accountId, $currencyCode);
+        return 0.00; //db->getAccountBalance($this->accountId, $currencyCode);
     }
 
     public function getFullAccountBalance(string $currencyCode = null): float
     {
         $currencyCode = $currencyCode ?? $this->mainCurrency;
-
-        if (!isset($this->currencyList[$currencyCode])) {
-            throw NotFoundExcption(); //у клиента нет счета в такой валюте
-        }
-
+        $this->checkCurrency($currencyCode);
         $sum = 0.00;
 
         foreach ($this->currencyList as $code => $name) {
@@ -111,5 +109,12 @@ class Account
         }
 
         return $sum;
+    }
+
+    private function checkCurrency(string $currencyCode): void
+    {
+        if (!isset($this->currencyList[$currencyCode])) {
+            throw NotFoundExcption(); //у клиента нет счета в такой валюте
+        }
     }
 }
