@@ -19,7 +19,7 @@ class Bank
         try {
             //set exchange ratio currency/currency
         } catch (\Throwable $e) {
-            Throw NotFoundExcption();
+            throw NotFoundExcption(); // нет таких кодов валют
         }
 
         return true;
@@ -34,7 +34,7 @@ class Bank
         try {
             return 0.00; //db->get exchange ratio currency/currency()
         } catch (\Throwable $e) {
-            Throw NotFoundExcption();
+            throw NotFoundExcption();
         }
     }
 
@@ -54,7 +54,7 @@ class Bank
         try {
             //db->insertNewCurrency($currencyCode, $currencyName);
         } catch (\Throwable $e) {
-            Throw AlreadyExistsExcption();
+            throw AlreadyExistsExcption();
         }
 
         return true;
@@ -65,7 +65,7 @@ class Bank
         try {
             //delete from db
         } catch (\Throwable $e) {
-            Throw NotFoundExcption();
+            throw NotFoundExcption();
         }
 
         return true;
