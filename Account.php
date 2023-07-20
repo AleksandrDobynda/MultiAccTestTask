@@ -77,7 +77,7 @@ class Account
 
     public function getMoneyFromAccount(string $currencyCode, float $amount): bool
     {
-        $balance = $this->getAccountBalance();
+        $balance = $this->getAccountBalance($currencyCode);
 
         if ($amount <= $balance) {
             $newBalance = $balance - $amount;
